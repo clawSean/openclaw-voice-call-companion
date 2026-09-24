@@ -9,8 +9,10 @@ Updated: 2026-09-24
 The maintainable two-layer implementation exists:
 
 - Voice Call trusted task seam: commit `d3036dd3447` on isolated branch
-  `feat/voice-call-task-seam`.
+  `feat/voice-call-task-seam`, pushed to the `clawSean/openclaw` fork without a
+  duplicate upstream PR.
 - Standalone plugin: `@clawsean/task-call` v0.1.0 in this canonical project.
+- Public source: `clawSean/openclaw-voice-call-companion@c423465`.
 - Upgrade automation and runbook: complete and smoke-proven.
 - Live config, plugin install, and Gateway restart: intentionally untouched.
 
