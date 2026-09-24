@@ -60,7 +60,8 @@ restarts OpenClaw.
 - Compatibility automation: clean checkout reports `patch_required`; dry-run,
   apply, and re-check reports `integrated`.
 - Focused OpenClaw Vitest execution remains pending because the isolated
-  worktree has no dependencies installed; this is a required pre-deployment
-  gate, not a waived test.
+  worktree has no matching current-main dependencies. Reusing the older main
+  checkout's toolchain failed at startup (`defineCacheKeyGenerator` mismatch),
+  so this remains a required pre-deployment gate rather than a waived test.
 
 See [docs/UPGRADING.md](docs/UPGRADING.md) before every OpenClaw upgrade.

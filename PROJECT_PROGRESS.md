@@ -33,9 +33,11 @@ The maintainable two-layer implementation exists:
 
 ## Pending Proof Gate
 
-The isolated OpenClaw seam worktree has no `node_modules`, so focused Vitest
-could not run without installing dependencies. Do not activate the seam until
-these pass in a dependency-ready checkout:
+The isolated OpenClaw seam worktree has no matching current-main dependencies.
+Borrowing the older main checkout's supported shared toolchain was attempted,
+but Vitest failed during startup because that dependency set lacks the current
+`defineCacheKeyGenerator` API. The temporary dependency link was removed. Do
+not activate the seam until these pass in a dependency-ready checkout:
 
 ```bash
 node scripts/run-vitest.mjs \
