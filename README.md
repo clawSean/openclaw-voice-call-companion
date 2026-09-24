@@ -10,11 +10,13 @@ behavior because the actual mission was never retained as private context.
 
 The implementation has two deliberately separate layers:
 
-1. **Small Voice Call seam** — trusted plugins can supply a private per-call
-   `objective`; trusted plugins can read state plus the completed transcript.
-2. **Standalone `task-call` plugin** — validates bounded task packets, keeps
-   spoken opener separate from private context, persists task state, refuses
-   payments/unbounded commitments, and starts fail-closed in no-dial mode.
+1. **Small Voice Call seam** — the Voice Call tool accepts a private per-call
+   `objective`, retains it through the conversation, and exposes transcript
+   inspection only to the OpenClaw session that created the call.
+2. **Standalone `task-call` plugin** — validates bounded task packets, keeps the
+   spoken opener separate from private context, and refuses payments or
+   unbounded commitments. It does not receive privileged Gateway access and
+   does not dial on its own.
 
 There is no permanent Voice Call fork. The seam is a pinned eight-file patch
 with automated compatibility and application commands.
@@ -24,10 +26,10 @@ with automated compatibility and application commands.
 - `liveEnabled` defaults to `false`.
 - Supported workflows: `appointment` and `information`.
 - Payments are rejected.
-- Normal agent tools and external Gateway callers cannot set `objective` or
-  inspect transcripts through the seam.
-- Live activation still requires mock-provider proof, owner roleplay, explicit
-  install/config approval, and a separately approved Gateway restart.
+- Inspection omits private metadata/objective and hides calls owned by another
+  requester session.
+- Mock-provider proof is complete. One answered owner roleplay remains before
+  any real business call.
 
 ## Commands
 
@@ -47,6 +49,8 @@ restarts OpenClaw.
 - `src/task-call-core.js` — packet validation, private objective rendering, and
   durable task-record helpers.
 - `patches/openclaw-voice-call-task-seam.patch` — version-pinned Voice Call seam.
+- `scripts/deploy-tested-voice-call-dist.sh` — version-matched trusted-install deployment.
+- `scripts/restore-original-voice-call-dist.sh` — recoverable rollback that preserves failures.
 - `docs/UPGRADING.md` — exact post-upgrade procedure and rollback.
 - `PROJECT_PROGRESS.md` — current status and next action.
 - `artifacts/README.md` — local-only evidence boundary; private call records and
@@ -54,14 +58,13 @@ restarts OpenClaw.
 
 ## Current Proof
 
-- Companion plugin unit/integration tests: `6/6` passing.
+- Companion unit tests: `5/5` passing; package/check gate passing.
 - Syntax/package checks: passing.
-- Seam lint/format: passing against OpenClaw `main` at `3948a0fd183`.
+- Exact-release Voice Call tests: `100/100` passing on OpenClaw `2026.9.4`.
+- Seam lint, formatting, and production/test typechecks: passing.
 - Compatibility automation: clean checkout reports `patch_required`; dry-run,
   apply, and re-check reports `integrated`.
-- Focused OpenClaw Vitest execution remains pending because the isolated
-  worktree has no matching current-main dependencies. Reusing the older main
-  checkout's toolchain failed at startup (`defineCacheKeyGenerator` mismatch),
-  so this remains a required pre-deployment gate rather than a waived test.
+- Trusted-install mock proof passed. The first Twilio owner-roleplay attempt
+  reached voicemail, so a human conversation is not yet proven.
 
 See [docs/UPGRADING.md](docs/UPGRADING.md) before every OpenClaw upgrade.

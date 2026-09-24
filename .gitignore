@@ -1,5 +1,6 @@
 artifacts/*
 !artifacts/README.md
 node_modules/
+.worktrees/
 *.tgz
 .DS_Store

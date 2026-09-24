@@ -5,16 +5,27 @@ goal is to make an OpenClaw upgrade boring: detect native support, reapply the
 small seam only when necessary, prove it, and stop before touching the live
 Gateway.
 
+## Current Proven Baseline
+
+- OpenClaw: `2026.9.4` (`3a9d69db306`)
+- Exact-release seam commits: `bc0a004e360`, `db9c0c29eb9`
+- Focused Voice Call tests: `100/100`
+- Companion unit tests: `5/5`; package/check gate passing
+- Trusted official plugin backup: `dist.pre-task-call`
+- Mock end-to-end proof: passed
+- Answered owner roleplay: pending
+
 ## What Survives an Upgrade
 
 - This project and its `task-call` plugin remain canonical here.
-- Task packets remain in OpenClaw plugin state under plugin id `task-call`.
+- The companion plugin remains canonical in this repository.
 - The bundled Voice Call seam may be overwritten by an OpenClaw package update.
 - No full Voice Call fork is maintained.
 
 ## Before Upgrading OpenClaw
 
-1. Keep the live Gateway on the currently proven version.
+1. Keep the live Gateway on the currently proven version. Do not update the live
+   package until the new version passes this entire isolated proof.
 2. Obtain or update an isolated **full source checkout** of the new OpenClaw
    release. The installed npm/runtime package is not a patch target.
 3. From this project, run:
@@ -70,12 +81,12 @@ npm run check
 
 Proof must show all of the following:
 
-1. External/model callers cannot set a private `objective`.
-2. Trusted plugin callers can set `objective` separately from the spoken opener.
-3. The objective reaches realtime instructions and is marked private/non-spoken.
-4. Only trusted plugin callers can use `voicecall.inspect`.
-5. Inspection returns both transcript sides but not call metadata/objective.
-6. `task-call` remains fail-closed when `liveEnabled` is false.
+1. `objective` remains separate from the spoken opener.
+2. The objective reaches realtime instructions and is private/non-spoken.
+3. Tool-created calls retain requester-session ownership.
+4. `inspect_call` returns both transcript sides but not metadata/objective.
+5. `inspect_call` hides calls owned by another requester session.
+6. `task-call` remains a non-dialing validator with `liveEnabled: false`.
 
 ## Deployment Gate
 
@@ -85,22 +96,51 @@ actions and require JPop’s explicit approval.
 
 After approval:
 
-1. Deploy the already-proven OpenClaw build/package.
-2. Confirm the canonical `task-call` plugin path is still configured.
-3. Keep `liveEnabled: false` for mock-provider proof.
-4. Restart the Gateway once.
-5. Run mock-provider proof, then owner roleplay.
-6. Enable live calls only after both proofs pass.
+1. Resolve the active trusted official Voice Call root with:
+
+   ```bash
+   openclaw plugins list --json | jq -r \
+     '.plugins[] | select(.id=="voice-call" and .trustedOfficialInstall==true) | .rootDir'
+   ```
+
+2. Deploy only the already-tested, matching-version build:
+
+   ```bash
+   OPENCLAW_SOURCE=/absolute/path/to/tested/openclaw \
+     scripts/deploy-tested-voice-call-dist.sh --check
+
+   OPENCLAW_SOURCE=/absolute/path/to/tested/openclaw \
+     scripts/deploy-tested-voice-call-dist.sh --apply
+   ```
+
+   The script resolves the trusted official install, refuses version mismatch,
+   stages and compares the build, preserves the original as
+   `dist.pre-task-call`, and verifies the deployed bytes.
+3. Confirm the canonical `task-call` plugin remains loaded and
+   `task-call.liveEnabled` remains `false`.
+4. Force Voice Call to `provider=mock`.
+5. Run `openclaw config validate` and the Gateway watchdog dry-run.
+6. Restart once through `/Users/Sean/projects/gateway-watchdog/safe-apply.sh`.
+7. Verify Gateway health, Telegram health, plugin source/trust, and
+   `provider=mock` before creating any call.
+8. Run mock-provider proof. Only then switch to Twilio for one owner roleplay.
 
 ## Rollback
 
 If compatibility or proof fails, leave the production version unchanged. If a
-new build was already deployed, restore the previous OpenClaw package/build and
-restart once. The companion plugin remains fail-closed with `liveEnabled: false`.
+new Voice Call `dist` was already deployed, run:
+
+```bash
+scripts/restore-original-voice-call-dist.sh
+```
+
+Then restore the separately saved config backup and restart once through the
+watchdog. The script preserves the failed build with a timestamp rather than
+deleting it. The companion remains non-dialing with `liveEnabled: false`.
 
 ## Seam Surface
 
-The patch intentionally touches only these eight Voice Call files:
+The current exact-release patch touches these Voice Call files:
 
 - `extensions/voice-call/index.ts`
 - `extensions/voice-call/index.test.ts`
@@ -114,3 +154,16 @@ The patch intentionally touches only these eight Voice Call files:
 If an upgrade changes unrelated Voice Call internals, no manual merge should be
 needed. If it changes any of these contracts, the compatibility command fails
 closed before production is touched.
+
+## Done Conditions
+
+An upgrade is complete only when:
+
+1. focused Voice Call tests and companion tests are green;
+2. compatibility reports `integrated`;
+3. deployed `dist` matches the tested source byte-for-byte;
+4. Gateway and Telegram recover after the guarded restart;
+5. mock call creation, objective retention, ownership, and inspection pass;
+6. the provider is returned to its intended final value;
+7. `PROJECT_PROGRESS.md`, the daily log, and the exact tested/deployed commit
+   hashes are updated.

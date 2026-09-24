@@ -10,7 +10,10 @@
     "scripts/apply-openclaw-seam.mjs",
     "scripts/check-openclaw-compat.mjs",
     "scripts/check.mjs",
+    "scripts/deploy-tested-voice-call-dist.sh",
     "scripts/openclaw-target.mjs",
+    "scripts/resolve-trusted-voice-call-root.mjs",
+    "scripts/restore-original-voice-call-dist.sh",
     "src",
     "LICENSE",
     "README.md",
@@ -20,7 +23,8 @@
     "check": "node scripts/check.mjs",
     "test": "node --test test/*.test.mjs",
     "compat": "node scripts/check-openclaw-compat.mjs",
-    "seam": "node scripts/apply-openclaw-seam.mjs"
+    "seam": "node scripts/apply-openclaw-seam.mjs",
+    "voice-root": "node scripts/resolve-trusted-voice-call-root.mjs"
   },
   "openclaw": {
     "extensions": [

@@ -4,57 +4,57 @@ Updated: 2026-09-24
 
 ## Status
 
-**Built locally; not installed or live.**
+**Deployed on OpenClaw `2026.9.4`; real business calls remain blocked pending one answered owner roleplay.**
 
 The maintainable two-layer implementation exists:
 
-- Voice Call trusted task seam: commit `d3036dd3447` on isolated branch
-  `feat/voice-call-task-seam`, pushed to the `clawSean/openclaw` fork without a
-  duplicate upstream PR.
+- Exact-release Voice Call seam: commits `bc0a004e360` and `db9c0c29eb9` on
+  branch `personal/voice-call-task-seam-v2026.9.4`. The tested `dist` is deployed
+  over the trusted official `@openclaw/voice-call@2026.9.4` install; the original
+  `dist` is retained beside it as `dist.pre-task-call` for deterministic rollback.
 - Standalone plugin: `@clawsean/task-call` v0.1.0 in this canonical project.
-- Public source: `clawSean/openclaw-voice-call-companion@c423465`.
+- `task-call` is now deliberately a validator only. Voice Call owns execution,
+  private objective retention, and requester-session-scoped transcript inspection.
 - Upgrade automation and runbook: complete and smoke-proven.
-- Live config, plugin install, and Gateway restart: intentionally untouched.
+- Gateway is healthy after the trusted-install deployment. Voice Call is back on
+  `twilio`; `task-call.liveEnabled` remains `false`.
 
 ## Proven
 
 - Root cause: `message` is a spoken opener, not durable hidden context.
 - Current OpenClaw `main` already persists user and assistant transcript events.
-- Private objective is accepted only from trusted plugin runtime calls.
-- Transcript inspection is accepted only from trusted plugin runtime calls and
-  omits metadata/objective.
+- Private objective is retained by Voice Call's model-facing tool for calls
+  created in the requesting OpenClaw session.
+- Transcript inspection is restricted to the requester session and omits
+  metadata/objective.
 - Companion rejects unsupported workflows, malformed phone numbers, and
   payments.
-- Companion defaults to no-dial mode.
-- Plugin tests: `6/6` passing.
-- Seam lint and formatting checks: passing.
+- Companion is non-dialing and defaults to no-dial validation.
+- Companion unit tests: `5/5` passing; package/check gate passing.
+- Exact-release focused Voice Call tests: `100/100` passing.
+- Production/test typechecks, lint, and formatting: passing.
 - Clean `2026.9.6` upgrade simulation:
   `patch_required` → dry-run succeeds → apply succeeds → `integrated`.
 
-## Pending Proof Gate
+## Live Proof
 
-The isolated OpenClaw seam worktree has no matching current-main dependencies.
-Borrowing the older main checkout's supported shared toolchain was attempted,
-but Vitest failed during startup because that dependency set lacks the current
-`defineCacheKeyGenerator` API. The temporary dependency link was removed. Do
-not activate the seam until these pass in a dependency-ready checkout:
+- Mock-provider end-to-end call passed: call creation, persistence, private
+  objective retention, requester ownership, and same-session inspection.
+- First Twilio owner-roleplay attempt connected to Jared's voicemail. The direct
+  clinic-facing opener was correct and no role reversal occurred, but voicemail
+  identified the line as Jared's, so the agent treated it as a wrong number and
+  left a callback-style message. The attempt was ended cleanly; private call IDs
+  and transcripts remain in local logs rather than this public repository.
+- One answered owner-roleplay call is still required. Do not call a real clinic
+  until its transcript shows sustained caller role and correct task completion.
 
-```bash
-node scripts/run-vitest.mjs \
-  extensions/voice-call/index.test.ts \
-  extensions/voice-call/src/runtime.test.ts \
-  extensions/voice-call/src/manager/outbound.test.ts
-```
+## Remaining Gate
 
-## Activation Sequence
-
-1. Run the focused OpenClaw tests above.
-2. Load the canonical plugin path with `liveEnabled: false`.
-3. Restart the Gateway once, with explicit approval.
-4. Prove the full flow with Voice Call's mock provider.
-5. Run a clean owner roleplay call.
-6. Review transcript and task outcome.
-7. Enable real external calls only after both proofs pass.
+1. Call Jared once when he is ready to answer as clinic staff.
+2. Inspect the same-session transcript.
+3. Require sustained caller role, useful clinic questions, and a clean close.
+4. If green, mark the narrow appointment/information workflow proven.
+5. Real clinic calls still require explicit per-call approval.
 
 ## Upgrade Contract
 
@@ -84,8 +84,8 @@ not install packages, alter live config, or restart the Gateway.
 
 ## Next Action
 
-Run the focused OpenClaw tests in a dependency-ready isolated checkout, then
-request explicit approval for plugin activation and the single Gateway restart.
+Complete one answered owner-roleplay call and review its transcript. No further
+Gateway restart is needed for that proof.
 
 Historical investigation and call evidence remain local-only under `artifacts/`;
 the publication boundary is documented in `artifacts/README.md`.
