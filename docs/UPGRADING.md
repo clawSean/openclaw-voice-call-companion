@@ -15,7 +15,8 @@ Gateway.
 ## Before Upgrading OpenClaw
 
 1. Keep the live Gateway on the currently proven version.
-2. Obtain or update an isolated checkout of the new OpenClaw release.
+2. Obtain or update an isolated **full source checkout** of the new OpenClaw
+   release. The installed npm/runtime package is not a patch target.
 3. From this project, run:
 
    ```bash

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { projectPath, readOpenClawVersion, resolveOpenClawTarget } from "./openclaw-target.mjs";
 
@@ -14,6 +14,25 @@ const requiredFiles = [
   "extensions/voice-call/src/runtime.ts",
   "extensions/voice-call/src/types.ts",
 ];
+
+const missingFiles = requiredFiles.filter((relativePath) => !existsSync(path.join(target, relativePath)));
+if (missingFiles.length) {
+  console.error(
+    JSON.stringify(
+      {
+        status: "blocked",
+        target,
+        version: readOpenClawVersion(target),
+        reason: "Target is an installed/runtime package, not a patchable OpenClaw source checkout.",
+        missingFiles,
+        action: "Use an isolated full OpenClaw source checkout for compatibility, proof, and build.",
+      },
+      null,
+      2,
+    ),
+  );
+  process.exit(2);
+}
 
 function integrated() {
   const content = Object.fromEntries(

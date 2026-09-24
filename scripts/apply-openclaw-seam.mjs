@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { projectPath, readOpenClawVersion, resolveOpenClawTarget } from "./openclaw-target.mjs";
 
@@ -10,6 +10,13 @@ const target = resolveOpenClawTarget(argv);
 const shouldApply = argv.includes("--apply");
 const patchPath = projectPath("patches", "openclaw-voice-call-task-seam.patch");
 const indexPath = path.join(target, "extensions/voice-call/index.ts");
+
+if (!existsSync(indexPath)) {
+  console.error(
+    "Target is not a full OpenClaw source checkout. Use isolated source; never patch the installed runtime package directly.",
+  );
+  process.exit(2);
+}
 
 if (readFileSync(indexPath, "utf8").includes('"voicecall.inspect"')) {
   console.log(`Voice Call seam is already present in OpenClaw ${readOpenClawVersion(target)}.`);
