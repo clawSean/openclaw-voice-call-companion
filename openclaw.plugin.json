@@ -1,0 +1,38 @@
+{
+  "id": "task-call",
+  "name": "Task Call",
+  "version": "0.1.0",
+  "description": "Validates and runs constrained outbound appointment and information calls through Voice Call.",
+  "activation": {
+    "onStartup": true
+  },
+  "contracts": {
+    "tools": ["task_call"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "liveEnabled": {
+        "type": "boolean",
+        "default": false
+      },
+      "requestTimeoutMs": {
+        "type": "number",
+        "minimum": 1000,
+        "maximum": 120000,
+        "default": 15000
+      }
+    }
+  },
+  "uiHints": {
+    "liveEnabled": {
+      "label": "Enable live calls",
+      "help": "Keep disabled until mock-provider and owner-roleplay proofs pass."
+    },
+    "requestTimeoutMs": {
+      "label": "Gateway request timeout (ms)",
+      "advanced": true
+    }
+  }
+}

@@ -1,0 +1,5 @@
+artifacts/*
+!artifacts/README.md
+node_modules/
+*.tgz
+.DS_Store
