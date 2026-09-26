@@ -4,8 +4,9 @@ Updated: 2026-09-25
 
 ## Status
 
-**Isolated `2026.9.6` proof is green; production remains on the healthy official
-Voice Call build pending a separately approved deployment and one answered owner roleplay.**
+**The patched `2026.9.6` Voice Objective seam is deployed in the trusted official
+Voice Call package and loaded by the restarted Gateway. Mock-only production
+proof passed; an answered owner roleplay remains separately gated.**
 
 The maintainable two-layer implementation exists:
 
@@ -53,6 +54,28 @@ The maintainable two-layer implementation exists:
 - One answered owner-roleplay call is still required. Do not call a real clinic
   until its transcript shows sustained caller role and correct task completion.
 
+## 2026.9.6 Production Restoration (2026-09-25)
+
+- JPop approved the exact-release Voice Objective deployment and Gateway restart.
+  The patched worktree was built using OpenClaw's native
+  `plugin-npm-runtime-build.mts extensions/voice-call` entry point, then
+  deployed with the version-matched `deploy-tested-voice-call-dist.sh --apply`.
+  The prior official build is preserved as `dist.pre-task-call` in the trusted
+  official plugin root. Patched `dist/index.js` SHA-256:
+  `7e3b3e1d1468419d9fb2274b9c3761a6fa1caa8cc6ebb6e951d93ab678f746e7`.
+- The restart completed after the requesting turn closed: old PID `25176`,
+  new PID `7756`. RPC is reachable; `voice-call@2026.9.6` loads from the
+  patched trusted `dist/index.js`, and `task-call@0.1.0` is loaded with
+  `liveEnabled=false`.
+- With `provider=mock` confirmed, the live `voice_call` tool accepted a
+  private `objective` and created call
+  `7bf6b6dd-a15a-4c04-a4a3-49452102cd4a`. Inspection returned
+  `provider=mock` and provider call ID with `mock-` prefix, without
+  exposing the private objective; the call was ended. The focused source tests
+  prove metadata retention; this mock inspection alone does not prove an
+  answered conversation carried the objective. The pre-test provider `twilio`
+  was restored from the config backup and validated, with no real call placed.
+
 ## Remaining Gate
 
 1. Call Jared once when he is ready to answer as clinic staff.
@@ -89,9 +112,9 @@ not install packages, alter live config, or restart the Gateway.
 
 ## Next Action
 
-Request the separate matching-version deployment/config/restart approval, run
-the live mock-provider gate, then complete one answered owner-roleplay call and
-review its transcript.
+Before any real clinic call, obtain explicit per-call approval. An answered
+owner roleplay and transcript review remain separate proof, not covered by the
+mock-only production check.
 
 Historical investigation and call evidence remain local-only under `artifacts/`;
 the publication boundary is documented in `artifacts/README.md`.

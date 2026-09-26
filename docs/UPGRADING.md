@@ -5,7 +5,7 @@ goal is to make an OpenClaw upgrade boring: detect native support, reapply the
 small seam only when necessary, prove it, and stop before touching the live
 Gateway.
 
-## Current Proven Baseline
+## Previous Proven Baseline (2026.9.4)
 
 - OpenClaw: `2026.9.4` (`3a9d69db306`)
 - Exact-release seam commits: `bc0a004e360`, `db9c0c29eb9`
@@ -14,6 +14,24 @@ Gateway.
 - Trusted official plugin backup: `dist.pre-task-call`
 - Mock end-to-end proof: passed
 - Answered owner roleplay: pending
+
+## Current Production Baseline (2026.9.6)
+
+- Exact-release patch: companion commit `b9c8637ff1189080993dec647e9c0b8a861e62a4`;
+  101 focused Voice tests and 5 companion tests passed in isolation.
+- On 2026-09-25 the patched official Voice Call `dist` was deployed with
+  `deploy-tested-voice-call-dist.sh --apply` and the original retained at
+  `dist.pre-task-call`. Restarted Gateway PID `7756` loaded the trusted
+  `voice-call@2026.9.6` package; a live mock-only Objective call was created,
+  inspected, and ended. The provider was restored to `twilio` afterward.
+- The first-party Voice Call extension cannot be bundled with
+  `openclaw plugins pack` on this release: even after a native build it
+  rejects `./index.ts` for missing tool/feature authoring metadata. Use
+  the repository's exact-version, rollback-preserving `dist` script,
+  not an invented plugin archive.
+- A scheduled `gateway.restart` response is not completion: the process
+  remained at old PID `25176` while the requesting turn was active.
+  Finish that turn, then prove a new PID, RPC readiness, and loaded plugin.
 
 ## Latest Isolated Upgrade Proof
 
