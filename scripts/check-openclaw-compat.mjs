@@ -8,11 +8,19 @@ import { projectPath, readOpenClawVersion, resolveOpenClawTarget } from "./openc
 const target = resolveOpenClawTarget();
 const patchPath = projectPath("patches", "openclaw-voice-call-task-seam.patch");
 const requiredFiles = [
+  "extensions/voice-call/index.test.ts",
   "extensions/voice-call/index.ts",
   "extensions/voice-call/src/command-service.ts",
+  "extensions/voice-call/src/manager/outbound.test.ts",
   "extensions/voice-call/src/manager/outbound.ts",
+  "extensions/voice-call/src/runtime.test.ts",
   "extensions/voice-call/src/runtime.ts",
   "extensions/voice-call/src/types.ts",
+];
+const focusedTests = [
+  "extensions/voice-call/index.test.ts",
+  "extensions/voice-call/src/manager/outbound.test.ts",
+  "extensions/voice-call/src/runtime.test.ts",
 ];
 
 const missingFiles = requiredFiles.filter((relativePath) => !existsSync(path.join(target, relativePath)));
@@ -65,9 +73,56 @@ function patchApplies() {
   };
 }
 
+function validateIntegratedSource() {
+  const oxfmt = path.join(target, "node_modules", ".bin", "oxfmt");
+  const vitest = path.join(target, "node_modules", ".bin", "vitest");
+  const missingTools = [oxfmt, vitest].filter((toolPath) => !existsSync(toolPath));
+  if (missingTools.length) {
+    return {
+      ok: false,
+      reason: "Integrated source cannot be trusted until its pinned development dependencies are installed.",
+      detail: `Missing: ${missingTools.join(", ")}`,
+      action: `Install the pinned dependencies in ${target}, then rerun compatibility proof.`,
+    };
+  }
+
+  const format = spawnSync(oxfmt, ["--check", ...requiredFiles], {
+    cwd: target,
+    encoding: "utf8",
+  });
+  if (format.status !== 0) {
+    return {
+      ok: false,
+      reason: "The integrated Voice Call seam failed syntax/format validation.",
+      detail: [format.stdout, format.stderr].filter(Boolean).join("\n").trim(),
+      action: "Repair or rebase the seam in isolated source; do not deploy it.",
+    };
+  }
+
+  const tests = spawnSync(vitest, ["run", ...focusedTests, "--maxWorkers=1"], {
+    cwd: target,
+    encoding: "utf8",
+  });
+  if (tests.status !== 0) {
+    return {
+      ok: false,
+      reason: "The integrated Voice Call seam failed its focused source tests.",
+      detail: [tests.stdout, tests.stderr].filter(Boolean).join("\n").trim(),
+      action: "Repair or rebase the seam in isolated source; do not deploy it.",
+    };
+  }
+
+  return { ok: true, tests: focusedTests };
+}
+
 const version = readOpenClawVersion(target);
 if (integrated()) {
-  console.log(JSON.stringify({ status: "integrated", target, version }, null, 2));
+  const proof = validateIntegratedSource();
+  if (!proof.ok) {
+    console.error(JSON.stringify({ status: "blocked", target, version, ...proof }, null, 2));
+    process.exit(2);
+  }
+  console.log(JSON.stringify({ status: "integrated", target, version, proof }, null, 2));
   process.exit(0);
 }
 

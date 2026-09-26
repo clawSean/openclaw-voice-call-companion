@@ -60,10 +60,11 @@ restarts OpenClaw.
 
 - Companion unit tests: `5/5` passing; package/check gate passing.
 - Syntax/package checks: passing.
-- Exact-release Voice Call tests: `100/100` passing on OpenClaw `2026.9.4`.
+- Exact-release Voice Call tests: `101/101` passing on OpenClaw `2026.9.6`.
 - Seam lint, formatting, and production/test typechecks: passing.
-- Compatibility automation: clean checkout reports `patch_required`; dry-run,
-  apply, and re-check reports `integrated`.
+- Compatibility automation: a clean checkout reports `patch_required`; dry-run
+  and apply succeed, and the dependency-complete exact-release worktree reports
+  `integrated` only after format and focused-test proof.
 - Trusted-install mock proof passed. The first Twilio owner-roleplay attempt
   reached voicemail, so a human conversation is not yet proven.
 

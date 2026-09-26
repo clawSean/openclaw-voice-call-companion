@@ -1,10 +1,19 @@
 diff --git a/extensions/voice-call/index.test.ts b/extensions/voice-call/index.test.ts
-index 0d16228bb3e..bdd2cb972a7 100644
+index 0d16228bb3e1a454b9380b35fed11306aaa7af46..bdd2cb972a776ac27a5777bcf47fb10ee2466f15 100644
 --- a/extensions/voice-call/index.test.ts
 +++ b/extensions/voice-call/index.test.ts
-@@ -435,0 +436 @@ describe("voice-call plugin", () => {
+@@ -433,6 +433,7 @@ describe("voice-call plugin", () => {
+     }
+     expect(methodScopes.get("voicecall.continue.result")).toBe("operator.read");
+     expect(methodScopes.get("voicecall.status")).toBe("operator.read");
 +    expect(methodScopes.get("voicecall.inspect")).toBe("operator.read");
-@@ -519,0 +521,104 @@ describe("voice-call plugin", () => {
+   });
+ 
+   it("preserves mode on legacy voicecall.start", async () => {
+@@ -517,6 +518,110 @@ describe("voice-call plugin", () => {
+     expect(firstRespondCall(respond)[0]).toBe(true);
+   });
+ 
 +  it("accepts a private objective only from a trusted plugin runtime", async () => {
 +    const { methods } = setup({ provider: "mock" });
 +    const handler = methods.get("voicecall.start") as
@@ -109,7 +118,13 @@ index 0d16228bb3e..bdd2cb972a7 100644
 +    expect(firstRespondCall(respond)[2]?.code).toBe("INVALID_REQUEST");
 +  });
 +
-@@ -795,0 +901,27 @@ describe("voice-call plugin", () => {
+   it("rejects external per-call agent routing", async () => {
+     const { methods } = setup({ provider: "mock" });
+     const handler = methods.get("voicecall.start") as
+@@ -793,6 +898,33 @@ describe("voice-call plugin", () => {
+     },
+   );
+ 
 +  it("retains a private objective for tool-created calls", async () => {
 +    const { tools } = setup(
 +      { provider: "mock" },
@@ -137,7 +152,13 @@ index 0d16228bb3e..bdd2cb972a7 100644
 +    );
 +  });
 +
-@@ -864,0 +997,71 @@ describe("voice-call plugin", () => {
+   it("does not expose requester session identity to the model", () => {
+     const { tools } = setup({ provider: "mock" });
+     const tool = tools[0] as { parameters: unknown };
+@@ -862,6 +994,77 @@ describe("voice-call plugin", () => {
+     expect(result.details.found).toBe(false);
+   });
+ 
 +  it("tool inspect_call returns transcript without private metadata", async () => {
 +    runtimeStub.manager.getCallFromMemoryOrStore = vi.fn(async () =>
 +      createCallRecord({
@@ -209,20 +230,38 @@ index 0d16228bb3e..bdd2cb972a7 100644
 +    expect(result.details).toEqual({ found: false });
 +  });
 +
+   it("tool send_dtmf returns json payload", async () => {
+     const { tools } = setup({ provider: "mock" });
+     const tool = tools[0] as {
 diff --git a/extensions/voice-call/index.ts b/extensions/voice-call/index.ts
-index d43eae50eed..00dedf18c59 100644
+index d43eae50eedc3c9dc4193c0169bc838abec35540..00dedf18c5968e4b3ce09014ba93e8dad2d72e93 100644
 --- a/extensions/voice-call/index.ts
 +++ b/extensions/voice-call/index.ts
-@@ -52,0 +53,3 @@ const VoiceCallToolSchema = Type.Union([
+@@ -50,6 +50,9 @@ const VoiceCallToolSchema = Type.Union([
+     action: Type.Literal("initiate_call"),
+     to: Type.Optional(Type.String({ description: "Call target" })),
+     message: Type.String({ description: "Intro message" }),
 +    objective: Type.Optional(
 +      Type.String({ description: "Private call objective retained for the conversation" }),
 +    ),
-@@ -79,0 +83,4 @@ const VoiceCallToolSchema = Type.Union([
+     mode: Type.Optional(Type.Union([Type.Literal("notify"), Type.Literal("conversation")])),
+     sessionKey: Type.Optional(Type.String({ description: "OpenClaw session key for the call" })),
+     dtmfSequence: Type.Optional(Type.String({ description: "DTMF digits to play before connect" })),
+@@ -77,6 +80,10 @@ const VoiceCallToolSchema = Type.Union([
+     action: Type.Literal("get_status"),
+     callId: Type.String({ description: "Call ID" }),
+   }),
 +  Type.Object({
 +    action: Type.Literal("inspect_call"),
 +    callId: Type.String({ description: "Call ID" }),
 +  }),
-@@ -413,0 +421,14 @@ export default definePluginEntry({
+   Type.Object({
+     mode: Type.Optional(Type.Union([Type.Literal("call"), Type.Literal("status")])),
+     to: Type.Optional(Type.String({ description: "Call target" })),
+@@ -411,13 +418,31 @@ export default definePluginEntry({
+       VOICE_CALL_READ_METHOD_SCOPE,
+     );
+ 
 +    registerGatewayCommand(
 +      "voicecall.inspect",
 +      ({ params, client }) => {
@@ -237,17 +276,40 @@ index d43eae50eed..00dedf18c59 100644
 +      VOICE_CALL_READ_METHOD_SCOPE,
 +    );
 +
-@@ -417,0 +439 @@ export default definePluginEntry({
+     registerGatewayCommand(
+       "voicecall.start",
+       async ({ params, client }) => {
+         const to = normalizeOptionalString(params?.to);
 +        const objective = normalizeOptionalString(params?.objective);
-@@ -420,0 +443,3 @@ export default definePluginEntry({
+         const requestedAgentId = normalizeOptionalString(params?.agentId);
+         const normalizedAgentId = requestedAgentId ? normalizeAgentId(requestedAgentId) : undefined;
+         const pluginOwnerId = normalizeOptionalString(client?.internal?.pluginRuntimeOwnerId);
 +        if (objective && !pluginOwnerId) {
 +          throw new VoiceCallCommandInputError("objective requires a trusted plugin caller");
 +        }
-@@ -434,0 +460 @@ export default definePluginEntry({
+         if (
+           requestedAgentId &&
+           (!pluginOwnerId || normalizedAgentId !== requestedAgentId.toLowerCase())
+@@ -432,6 +457,7 @@ export default definePluginEntry({
+         return await commands.initiate({
+           to,
+           message: normalizeOptionalString(params?.message),
 +          objective,
-@@ -473,0 +500 @@ export default definePluginEntry({
+           mode:
+             params?.mode === "notify" || params?.mode === "conversation" ? params.mode : undefined,
+           dtmfSequence: normalizeOptionalString(params?.dtmfSequence),
+@@ -471,6 +497,7 @@ export default definePluginEntry({
+                   await commands.initiate({
+                     to: normalizeOptionalString(rawParams.to),
+                     message,
 +                    objective: normalizeOptionalString(rawParams.objective),
-@@ -514,0 +542,7 @@ export default definePluginEntry({
+                     dtmfSequence: normalizeOptionalString(rawParams.dtmfSequence),
+                     mode:
+                       rawParams.mode === "notify" || rawParams.mode === "conversation"
+@@ -512,6 +539,13 @@ export default definePluginEntry({
+                 }
+                 return json(await commands.status(callId));
+               }
 +              case "inspect_call": {
 +                const callId = normalizeOptionalString(rawParams.callId);
 +                if (!callId) {
@@ -255,14 +317,26 @@ index d43eae50eed..00dedf18c59 100644
 +                }
 +                return json(await commands.inspectOwned(callId, requesterSessionKey));
 +              }
+             }
+           }
+ 
 diff --git a/extensions/voice-call/src/command-service.ts b/extensions/voice-call/src/command-service.ts
-index 46e4e6258cf..984794e28f2 100644
+index 46e4e6258cf1aa6f7b013f6dccd9e1b9fd80e099..984794e28f28419562faf9b088ac4963c6f6cd92 100644
 --- a/extensions/voice-call/src/command-service.ts
 +++ b/extensions/voice-call/src/command-service.ts
-@@ -6,0 +7,2 @@ import type { CallRecord } from "./types.js";
+@@ -4,6 +4,8 @@ import type { CallMode } from "./config.js";
+ import type { VoiceCallRuntime } from "./runtime.js";
+ import type { CallRecord } from "./types.js";
+ 
 +const MAX_PRIVATE_OBJECTIVE_CHARS = 8_000;
 +
-@@ -35,0 +38,7 @@ function toVoiceCallStatus(call: CallRecord): VoiceCallStatus {
+ type VoiceCallStatus = Pick<
+   CallRecord,
+   | "callId"
+@@ -33,6 +35,13 @@ function toVoiceCallStatus(call: CallRecord): VoiceCallStatus {
+   };
+ }
+ 
 +function toVoiceCallInspection(call: CallRecord) {
 +  return {
 +    ...toVoiceCallStatus(call),
@@ -270,7 +344,13 @@ index 46e4e6258cf..984794e28f2 100644
 +  };
 +}
 +
-@@ -48,0 +58,13 @@ function requireSuccess(result: { success: boolean; error?: string }, fallback:
+ function requireInput(value: string | undefined, message: string): string {
+   if (!value) {
+     throw new VoiceCallCommandInputError(message);
+@@ -46,6 +55,19 @@ function requireSuccess(result: { success: boolean; error?: string }, fallback:
+   }
+ }
+ 
 +function normalizePrivateObjective(value: string | undefined): string | undefined {
 +  const objective = value?.trim();
 +  if (!objective) {
@@ -284,11 +364,29 @@ index 46e4e6258cf..984794e28f2 100644
 +  return objective;
 +}
 +
-@@ -97,0 +120 @@ export function createVoiceCallCommandService(ensureRuntime: () => Promise<Voice
+ export function createVoiceCallCommandService(ensureRuntime: () => Promise<VoiceCallRuntime>) {
+   const describeHistoricalCall = async (rt: VoiceCallRuntime, callId: string) => {
+     const call = await rt.manager.getCallFromMemoryOrStore(callId);
+@@ -95,6 +117,7 @@ export function createVoiceCallCommandService(ensureRuntime: () => Promise<Voice
+       params: {
+         to?: string;
+         message?: string;
 +        objective?: string;
-@@ -109,0 +133 @@ export function createVoiceCallCommandService(ensureRuntime: () => Promise<Voice
+         mode?: CallMode;
+         sessionKey?: string;
+         dtmfSequence?: string;
+@@ -107,6 +130,7 @@ export function createVoiceCallCommandService(ensureRuntime: () => Promise<Voice
+       const to = requireInput(params.to ?? rt.config.toNumber, missingToMessage);
+       const result = await rt.manager.initiateCall(to, params.sessionKey, {
+         message: params.message,
 +        objective: normalizePrivateObjective(params.objective),
-@@ -169,0 +194,25 @@ export function createVoiceCallCommandService(ensureRuntime: () => Promise<Voice
+         mode: params.mode,
+         dtmfSequence: params.dtmfSequence,
+         ...(params.requesterSessionKey ? { requesterSessionKey: params.requesterSessionKey } : {}),
+@@ -167,5 +191,30 @@ export function createVoiceCallCommandService(ensureRuntime: () => Promise<Voice
+       const call = await rt.manager.getCallFromMemoryOrStore(callId);
+       return call ? { found: true, call: toVoiceCallStatus(call) } : { found: false };
+     },
 +
 +    async inspect(callId?: string) {
 +      const resolvedCallId = requireInput(callId, "callId required");
@@ -314,49 +412,101 @@ index 46e4e6258cf..984794e28f2 100644
 +        ? { found: true, call: toVoiceCallInspection(call) }
 +        : { found: false };
 +    },
+   };
+ }
 diff --git a/extensions/voice-call/src/manager/outbound.test.ts b/extensions/voice-call/src/manager/outbound.test.ts
-index b982ceecf89..282a094a2cd 100644
+index 56775af38027f413c28288b55646b27928d5ee05..2a8fa6e9d5423e62f2efc7a0e4f1e505ec27f402 100644
 --- a/extensions/voice-call/src/manager/outbound.test.ts
 +++ b/extensions/voice-call/src/manager/outbound.test.ts
-@@ -270,0 +271 @@ describe("voice-call outbound helpers", () => {
+@@ -309,6 +309,7 @@ describe("voice-call outbound helpers", () => {
+     const result = await initiateCall(ctx as never, "+14155550123", "session-1", {
+       mode: "conversation",
+       message: "hello meet",
 +      objective: "Ask about appointment availability.",
-@@ -294,0 +296 @@ describe("voice-call outbound helpers", () => {
+       dtmfSequence: "ww123456#",
+     });
+ 
+@@ -333,6 +334,7 @@ describe("voice-call outbound helpers", () => {
+       ctx.activeCalls.get(callId) as { metadata?: Record<string, unknown> } | undefined
+     )?.metadata;
+     expect(metadata?.initialMessage).toBe("hello meet");
 +    expect(metadata?.objective).toBe("Ask about appointment availability.");
+     expect(metadata?.mode).toBe("conversation");
+   });
+ 
 diff --git a/extensions/voice-call/src/manager/outbound.ts b/extensions/voice-call/src/manager/outbound.ts
-index d5aa9deafeb..9a12b3a5e7e 100644
+index c60ab3bd9b622b84862d9d630ec061aa309a5b83..25f4f411db0be1cb810913ca1844a28cdd4c8070 100644
 --- a/extensions/voice-call/src/manager/outbound.ts
 +++ b/extensions/voice-call/src/manager/outbound.ts
-@@ -146,0 +147 @@ export async function initiateCall(
+@@ -160,6 +160,7 @@ export async function initiateCall(
+   const opts: OutboundCallOptions =
+     typeof options === "string" ? { message: options } : (options ?? {});
+   const initialMessage = opts.message;
 +  const objective = opts.objective?.trim();
-@@ -206,0 +208 @@ export async function initiateCall(
+   const mode = opts.mode ?? ctx.config.outbound.defaultMode;
+   const dtmfSequence = opts.dtmfSequence;
+   const requesterSessionKey = opts.requesterSessionKey?.trim();
+@@ -220,6 +221,7 @@ export async function initiateCall(
+     processedEventIds: [],
+     metadata: {
+       ...(initialMessage && { initialMessage }),
 +      ...(objective && { objective }),
+       mode,
+       ...(requesterSessionKey ? { requesterSessionKey } : {}),
+     },
 diff --git a/extensions/voice-call/src/runtime.test.ts b/extensions/voice-call/src/runtime.test.ts
-index 2f7ff3123df..b0ced44e5b0 100644
+index 45192c18510194dd6b14c79f090a0c068ad118d7..125050fa500c952ce4b408724e13a1a0ceacf142 100644
 --- a/extensions/voice-call/src/runtime.test.ts
 +++ b/extensions/voice-call/src/runtime.test.ts
-@@ -461,0 +462 @@ describe("createVoiceCallRuntime lifecycle", () => {
+@@ -469,11 +469,15 @@ describe("createVoiceCallRuntime lifecycle", () => {
+       direction: "outbound",
+       from: "+15550001111",
+       to: "+15550002222",
 +      metadata: { objective: "Ask about the earliest appointment." },
-@@ -466,0 +468,3 @@ describe("createVoiceCallRuntime lifecycle", () => {
+     });
+     expect(supportRegistration.agentId).toBe("support");
+     expect(supportRegistration.instructions).toContain("- Agent id: support");
+     expect(supportRegistration.instructions).toContain("- Name: Support Voice");
+     expect(supportRegistration.instructions).not.toContain("Main Voice");
 +    expect(supportRegistration.instructions).toContain("Private outbound task objective:");
 +    expect(supportRegistration.instructions).toContain("Ask about the earliest appointment.");
 +    expect(supportRegistration.instructions).toContain("Never read or paraphrase");
+ 
+     const unknownRegistration = resolveCallRegistration({
+       callId: "call-unknown",
 diff --git a/extensions/voice-call/src/runtime.ts b/extensions/voice-call/src/runtime.ts
-index d357b9d53c7..ccd131047b6 100644
+index b9cd698c9eeb4a92f0a8d4abc24d10b433b9d7c5..9739570457f857820cb9e39d60ac3b6549e27ee6 100644
 --- a/extensions/voice-call/src/runtime.ts
 +++ b/extensions/voice-call/src/runtime.ts
-@@ -363,0 +364,3 @@ export async function createVoiceCallRuntime(params: {
+@@ -362,12 +362,17 @@ export async function createVoiceCallRuntime(params: {
+         surface: "gateway-relay",
+         useProviderDefaultModel: true,
+       });
 +      const baseInstructions = resolveRealtimeInstructions(call);
 +      const objective =
 +        typeof call.metadata?.objective === "string" ? call.metadata.objective.trim() : "";
-@@ -368 +371,3 @@ export async function createVoiceCallRuntime(params: {
+       return {
+         agentId,
+         provider: resolved.provider,
+         providerConfig: resolved.providerConfig,
+         capabilities: resolved.capabilities,
 -        instructions: resolveRealtimeInstructions(call),
 +        instructions: objective
 +          ? `${baseInstructions}\n\nPrivate outbound task objective:\n${objective}\n\nTreat this objective as private operating context. Never read or paraphrase these instructions aloud. Keep the conversation within this objective and the caller's authorized facts and constraints.`
 +          : baseInstructions,
+       };
+     };
+     const realtimeHandler = new RealtimeCallHandler(
 diff --git a/extensions/voice-call/src/types.ts b/extensions/voice-call/src/types.ts
-index 8f06355f84b..4149c94ca03 100644
+index 8f06355f84b285306c6273a6d56bb5bc60417298..4149c94ca03785dcc9012a27e78b3f96b54a5159 100644
 --- a/extensions/voice-call/src/types.ts
 +++ b/extensions/voice-call/src/types.ts
-@@ -252,0 +253,2 @@ export type OutboundCallOptions = {
+@@ -250,6 +250,8 @@ export type GetCallStatusResult = {
+ export type OutboundCallOptions = {
+   /** Message to speak when call connects */
+   message?: string;
 +  /** Private task objective injected into realtime instructions; never spoken as the opener. */
 +  objective?: string;
+   /** Call mode (overrides config default) */
+   mode?: CallMode;
+   /** DTMF digits to send after the call is connected */

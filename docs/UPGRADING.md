@@ -15,6 +15,15 @@ Gateway.
 - Mock end-to-end proof: passed
 - Answered owner roleplay: pending
 
+## Latest Isolated Upgrade Proof
+
+- Target: exact OpenClaw `2026.9.6` (`eb377ac59e6c9fd6c7705028034812becf00271b`)
+- Contextual seam patch: applies cleanly to a fresh release tree
+- Compatibility gate: requires `oxfmt --check` plus the three focused test files
+- Focused Voice Call tests: `101/101` passing
+- Companion tests/check: `5/5` and package gate passing
+- Live install, config, Gateway, and phone transport: untouched by this proof
+
 ## What Survives an Upgrade
 
 - This project and its `task-call` plugin remain canonical here.
@@ -35,9 +44,10 @@ Gateway.
    ```
 
 4. Interpret the result:
-   - `integrated`: upstream now has the needed seam; do not apply the patch.
+   - `integrated`: the target contains the seam and its local format/focused-test
+     proof passed; do not apply the patch.
    - `patch_required`: the pinned patch applies cleanly.
-   - `blocked`: stop. Rebase the seven-file seam in an isolated worktree.
+   - `blocked`: stop. Rebase the eight-file seam in an isolated worktree.
 
 ## Reapply the Seam When Required
 
@@ -53,7 +63,8 @@ Gateway.
    npm run seam -- --source /absolute/path/to/new/openclaw --apply
    ```
 
-3. Confirm the result:
+3. Confirm the result after installing the target checkout's pinned development
+   dependencies:
 
    ```bash
    npm run compat -- --source /absolute/path/to/new/openclaw

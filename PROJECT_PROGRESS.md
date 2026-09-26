@@ -1,10 +1,11 @@
 # Project Progress — OpenClaw Task Call Companion
 
-Updated: 2026-09-24
+Updated: 2026-09-25
 
 ## Status
 
-**Deployed on OpenClaw `2026.9.4`; real business calls remain blocked pending one answered owner roleplay.**
+**Isolated `2026.9.6` proof is green; production remains on the healthy official
+Voice Call build pending a separately approved deployment and one answered owner roleplay.**
 
 The maintainable two-layer implementation exists:
 
@@ -31,10 +32,14 @@ The maintainable two-layer implementation exists:
   payments.
 - Companion is non-dialing and defaults to no-dial validation.
 - Companion unit tests: `5/5` passing; package/check gate passing.
-- Exact-release focused Voice Call tests: `100/100` passing.
+- Exact-`2026.9.6` focused Voice Call tests: `101/101` passing.
 - Production/test typechecks, lint, and formatting: passing.
-- Clean `2026.9.6` upgrade simulation:
-  `patch_required` → dry-run succeeds → apply succeeds → `integrated`.
+- The contextual `2026.9.6` patch applies cleanly to a fresh release tree.
+- Compatibility now fails closed unless the integrated source passes formatting
+  and all three focused test files; marker presence alone is no longer proof.
+- Fresh `2026.9.6` archive: `patch_required` → dry-run succeeds → apply succeeds
+  with correct source placement. The dependency-complete exact-release worktree
+  then reports `integrated` with format/test proof.
 
 ## Live Proof
 
@@ -84,8 +89,9 @@ not install packages, alter live config, or restart the Gateway.
 
 ## Next Action
 
-Complete one answered owner-roleplay call and review its transcript. No further
-Gateway restart is needed for that proof.
+Request the separate matching-version deployment/config/restart approval, run
+the live mock-provider gate, then complete one answered owner-roleplay call and
+review its transcript.
 
 Historical investigation and call evidence remain local-only under `artifacts/`;
 the publication boundary is documented in `artifacts/README.md`.
