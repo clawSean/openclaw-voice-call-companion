@@ -15,7 +15,7 @@ Gateway.
 - Mock end-to-end proof: passed
 - Answered owner roleplay: pending
 
-## Current Production Baseline (2026.9.6)
+## Previous Production Baseline (2026.9.6)
 
 - Exact-release patch: companion commit `b9c8637ff1189080993dec647e9c0b8a861e62a4`;
   101 focused Voice tests and 5 companion tests passed in isolation.
@@ -33,7 +33,22 @@ Gateway.
   remained at old PID `25176` while the requesting turn was active.
   Finish that turn, then prove a new PID, RPC readiness, and loaded plugin.
 
-## Latest Isolated Upgrade Proof
+## Current Production Baseline (2026.9.7)
+
+- Exact-release source: OpenClaw `v2026.9.7` at `c074824a27c`; rebased patch
+  `patches/openclaw-voice-call-task-seam-2026.9.7.patch` from companion commit
+  `96bb647`. Focused Voice Call tests passed 95/95, companion tests 5/5, and
+  compatibility reported `integrated` before live deployment.
+- The trusted official `voice-call@2026.9.7` deployed `dist` matches the tested
+  build byte-for-byte. Its `dist/index.js` SHA-256 is
+  `5c875a16ac6f7d2e9907488e16e53ab63e79fae1aaa62226d3fe34eb7684ada3`.
+- After guarded restart, a live mock-provider Objective call was created,
+  inspected without leaking private Objective, and ended. No real call was made.
+  Voice provider was restored to `twilio`; `task-call.liveEnabled=false`.
+- Full rollout and retained native recovery evidence:
+  `/Users/Sean/projects/openclaw-update-runs/20261002T1730-2026.9.7/RUN.md`.
+
+## Prior Isolated Upgrade Proof
 
 - Target: exact OpenClaw `2026.9.6` (`eb377ac59e6c9fd6c7705028034812becf00271b`)
 - Contextual seam patch: applies cleanly to a fresh release tree
@@ -53,8 +68,8 @@ Gateway.
 - Compatibility reported `integrated` with format and focused-test proof; the
   canonical Voice Call test runner passed 95/95; the companion passed 5/5 and
   `npm run check`; the 9.7 trusted-plugin runtime build passed.
-- Production is still on the patched 2026.9.6 package. This qualification does
-  not claim a live 9.7 deployment, mock call, or Gateway restart.
+- This was the pre-update qualification. The live 9.7 deployment and mock proof
+  are recorded above.
 
 ## What Survives an Upgrade
 

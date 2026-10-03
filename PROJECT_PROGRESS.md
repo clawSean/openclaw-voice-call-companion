@@ -1,10 +1,10 @@
 # Project Progress — OpenClaw Task Call Companion
 
-Updated: 2026-09-25
+Updated: 2026-10-02
 
 ## Status
 
-**The patched `2026.9.6` Voice Objective seam is deployed in the trusted official
+**The patched `2026.9.7` Voice Objective seam is deployed in the trusted official
 Voice Call package and loaded by the restarted Gateway. Mock-only production
 proof passed; an answered owner roleplay remains separately gated.**
 
@@ -43,6 +43,15 @@ The maintainable two-layer implementation exists:
   then reports `integrated` with format/test proof.
 
 ## Live Proof
+
+- On 2026-10-02 the tested 9.7 build was deployed into the trusted official
+  Voice Call plugin after the native 9.7 update. Exact deployed `dist/index.js`
+  SHA-256: `5c875a16ac6f7d2e9907488e16e53ab63e79fae1aaa62226d3fe34eb7684ada3`.
+  The deployment check confirms byte parity with the tested source. A live
+  mock-only Objective call returned a `mock-` provider ID, requester inspection
+  omitted the private Objective, and the call was ended. The final provider is
+  `twilio`; `task-call.liveEnabled=false`. No real call occurred. Rollout record:
+  `/Users/Sean/projects/openclaw-update-runs/20261002T1730-2026.9.7/RUN.md`.
 
 - Mock-provider end-to-end call passed: call creation, persistence, private
   objective retention, requester ownership, and same-session inspection.
