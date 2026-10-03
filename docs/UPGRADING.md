@@ -42,6 +42,20 @@ Gateway.
 - Companion tests/check: `5/5` and package gate passing
 - Live install, config, Gateway, and phone transport: untouched by this proof
 
+## 2026.9.7 Pre-Update Qualification (2026-10-02)
+
+- Exact target: published OpenClaw tag `v2026.9.7` at `c074824a27c`.
+- The 2026.9.6 patch failed closed on one moved runtime test hunk. The isolated
+  eight-file seam was rebased and saved as
+  `patches/openclaw-voice-call-task-seam-2026.9.7.patch`; a clean worktree dry-run
+  and apply reproduced the exact source diff (SHA-256
+  `0e39b4b4844b7643d89161c62164e7494437081b500f6061a32fada238c66c04`).
+- Compatibility reported `integrated` with format and focused-test proof; the
+  canonical Voice Call test runner passed 95/95; the companion passed 5/5 and
+  `npm run check`; the 9.7 trusted-plugin runtime build passed.
+- Production is still on the patched 2026.9.6 package. This qualification does
+  not claim a live 9.7 deployment, mock call, or Gateway restart.
+
 ## What Survives an Upgrade
 
 - This project and its `task-call` plugin remain canonical here.

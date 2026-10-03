@@ -57,3 +57,13 @@ export function readOpenClawVersion(root) {
 export function projectPath(...parts) {
   return path.join(projectRoot, ...parts);
 }
+
+export function resolveSeamPatchPath(root) {
+  const version = readOpenClawVersion(root);
+  const patchName = {
+    "2026.9.6": "openclaw-voice-call-task-seam.patch",
+    "2026.9.7": "openclaw-voice-call-task-seam-2026.9.7.patch",
+  }[version];
+  if (!patchName) throw new Error(`No Voice Call seam patch pinned for OpenClaw ${version}.`);
+  return projectPath("patches", patchName);
+}

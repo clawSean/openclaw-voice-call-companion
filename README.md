@@ -48,7 +48,7 @@ restarts OpenClaw.
 - `src/index.js` — OpenClaw plugin registration and trusted Voice Call bridge.
 - `src/task-call-core.js` — packet validation, private objective rendering, and
   durable task-record helpers.
-- `patches/openclaw-voice-call-task-seam.patch` — version-pinned Voice Call seam.
+- `patches/openclaw-voice-call-task-seam.patch` and `patches/openclaw-voice-call-task-seam-2026.9.7.patch` — exact-release Voice Call seams selected by the compatibility scripts.
 - `scripts/deploy-tested-voice-call-dist.sh` — version-matched trusted-install deployment.
 - `scripts/restore-original-voice-call-dist.sh` — recoverable rollback that preserves failures.
 - `docs/UPGRADING.md` — exact post-upgrade procedure and rollback.

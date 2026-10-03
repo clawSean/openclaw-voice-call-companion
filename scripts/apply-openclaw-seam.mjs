@@ -3,12 +3,12 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { projectPath, readOpenClawVersion, resolveOpenClawTarget } from "./openclaw-target.mjs";
+import { readOpenClawVersion, resolveOpenClawTarget, resolveSeamPatchPath } from "./openclaw-target.mjs";
 
 const argv = process.argv.slice(2);
 const target = resolveOpenClawTarget(argv);
 const shouldApply = argv.includes("--apply");
-const patchPath = projectPath("patches", "openclaw-voice-call-task-seam.patch");
+const patchPath = resolveSeamPatchPath(target);
 const indexPath = path.join(target, "extensions/voice-call/index.ts");
 
 if (!existsSync(indexPath)) {
